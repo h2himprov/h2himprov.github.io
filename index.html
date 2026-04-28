@@ -426,11 +426,12 @@ function parseStart(val) {
   return parseInt(s.slice(0, colonIdx), 10) * 60 + parseFloat(s.slice(colonIdx + 1));
 }
 
-function computePhases(events) {
+function computePhases(events, clipDuration) {
+  const all = [...events, [clipDuration, 'initiation']];
   const phases = [];
-  for (let i = 0; i < events.length - 1; i++) {
-    const [t0, a0] = events[i];
-    const [t1, a1] = events[i + 1];
+  for (let i = 0; i < all.length - 1; i++) {
+    const [t0, a0] = all[i];
+    const [t1, a1] = all[i + 1];
     const phase = PHASE_MAP[`${a0},${a1}`];
     if (phase) phases.push({ start: t0, end: t1, phase });
   }
@@ -553,7 +554,7 @@ function buildTimeline(clipId, clipData, clipDuration) {
       .filter(([t]) => t !== null)
       .sort((a, b) => a[0] - b[0]);
 
-    const phases = computePhases(events);
+    const phases = computePhases(events, clipDuration);
 
     phases.forEach(({ start, end, phase }) => {
       const x = xOf(start);
