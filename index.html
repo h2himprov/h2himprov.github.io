@@ -181,6 +181,7 @@
     .clip-body {
       display: flex;
       flex-direction: column;
+      padding: 0 1.25rem;
     }
 
     @media (max-width: 900px) {
@@ -191,7 +192,7 @@
 
     /* ── VIDEO PANE ────────────────────────────────────────────── */
     .video-pane {
-      padding: 1.25rem;
+      padding: 1.25rem 0;
     }
 
     .video-wrap {
@@ -234,7 +235,7 @@
 
     /* ── TIMELINE PANE ─────────────────────────────────────────── */
     .timeline-pane {
-      padding: 1.25rem;
+      padding: 0.75rem 0 1.25rem;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
@@ -375,8 +376,6 @@
     <div class="legend-item"><div class="legend-swatch" style="background:var(--nego)"></div><span class="legend-label">negotiation</span></div>
     <div class="legend-item"><div class="legend-swatch" style="background:var(--prop)"></div><span class="legend-label">proposal</span></div>
     <div class="legend-item"><div class="legend-swatch" style="background:var(--stab)"></div><span class="legend-label">stability</span></div>
-    <div class="legend-item"><div class="legend-swatch" style="background:var(--end)"></div><span class="legend-label">ending</span></div>
-    <div class="legend-item"><div class="legend-swatch" style="background:var(--unk)"></div><span class="legend-label">unknown</span></div>
   </div>
 </template>
 
@@ -398,7 +397,7 @@ const CLIP_META = [
   { id: '11-19-2025-Clip1', label: 'Clip 1', youtubeId: null },
   { id: '11-19-2025-Clip2', label: 'Clip 2', youtubeId: null },
   { id: '11-19-2025-Clip3', label: 'Clip 3', youtubeId: 'Tg3z55bgLSk' },
-  { id: '03-24-2026-Clip4', label: 'Clip 4', youtubeId: null },
+  { id: '02-06-2026-Clip1', label: 'Clip 1', youtubeId: 'CUjmuYQIVi8' },
   { id: '03-24-2026-Clip5', label: 'Clip 5', youtubeId: null },
   { id: '03-24-2026-Clip6', label: 'Clip 6', youtubeId: null },
 ];
@@ -427,16 +426,13 @@ function parseStart(val) {
   return parseInt(s.slice(0, colonIdx), 10) * 60 + parseFloat(s.slice(colonIdx + 1));
 }
 
-function computePhases(events, clipDuration) {
+function computePhases(events) {
   const phases = [];
   for (let i = 0; i < events.length - 1; i++) {
     const [t0, a0] = events[i];
     const [t1, a1] = events[i + 1];
-    phases.push({ start: t0, end: t1, phase: PHASE_MAP[`${a0},${a1}`] || 'unknown' });
-  }
-  if (events.length > 0) {
-    const [tLast] = events[events.length - 1];
-    phases.push({ start: tLast, end: clipDuration, phase: 'ending' });
+    const phase = PHASE_MAP[`${a0},${a1}`];
+    if (phase) phases.push({ start: t0, end: t1, phase });
   }
   return phases;
 }
@@ -557,7 +553,7 @@ function buildTimeline(clipId, clipData, clipDuration) {
       .filter(([t]) => t !== null)
       .sort((a, b) => a[0] - b[0]);
 
-    const phases = computePhases(events, clipDuration);
+    const phases = computePhases(events);
 
     phases.forEach(({ start, end, phase }) => {
       const x = xOf(start);
