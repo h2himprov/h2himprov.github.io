@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>H2H Music Improv Dataset</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <style>
+    :root {
+      --bg:        #12110f;
+      --surface:   #1c1a17;
+      --border:    #2e2b26;
+      --text:      #e8e2d9;
+      --muted:     #7a7368;
+      --accent:    #c8a96e;
+
+      --nego:  #EEDD88;
+      --prop:  #FFAABB;
+      --stab:  #77AADD;
+      --end:   #4a4540;
+      --unk:   #555047;
+
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+      --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ────────────────────────────────────────────────── */
+    header {
+      padding: 3rem 4rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .header-left {}
+
+    .dataset-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .dataset-title {
+      font-family: var(--font-display);
+      font-size: 2.6rem;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+    }
+
+    .dataset-subtitle {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 1.1rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    .header-links {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-link {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.45rem 1rem;
+      border-radius: 2px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-link.primary {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-link.primary:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    /* ── DESCRIPTION ───────────────────────────────────────────── */
+    .description {
+      padding: 2rem 4rem;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .desc-block {}
+
+    .desc-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .desc-text {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── CLIPS ─────────────────────────────────────────────────── */
+    .clips-container {
+      padding: 0 4rem 4rem;
+    }
+
+    .clip-section {
+      margin-top: 3rem;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .clip-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 0.9rem 1.5rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .clip-id {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+
+    .clip-pairing {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-style: italic;
+      color: var(--muted);
+    }
+
+    .clip-duration-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .clip-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: 900px) {
+      .clip-body { grid-template-columns: 1fr; }
+      header { padding: 2rem; }
+      .description { padding: 1.5rem 2rem; grid-template-columns: 1fr; gap: 1rem; }
+      .clips-container { padding: 0 2rem 3rem; }
+    }
+
+    /* ── VIDEO PANE ────────────────────────────────────────────── */
+    .video-pane {
+      padding: 1.25rem;
+      border-right: 1px solid var(--border);
+    }
+
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #0a0908;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .video-wrap iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--muted);
+    }
+
+    .video-placeholder svg {
+      opacity: 0.3;
+    }
+
+    .video-placeholder span {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── TIMELINE PANE ─────────────────────────────────────────── */
+    .timeline-pane {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .timeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .timeline-instruction {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    .seek-readout {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      min-height: 1.2em;
+      transition: opacity 0.3s;
+    }
+
+    .timeline-svg-wrap {
+      width: 100%;
+    }
+
+    svg.timeline {
+      width: 100%;
+      display: block;
+      cursor: crosshair;
+      overflow: visible;
+    }
+
+    svg.timeline:hover .hover-line {
+      opacity: 1;
+    }
+
+    /* ── LEGEND ────────────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      padding: 0.75rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .legend-swatch {
+      width: 20px;
+      height: 8px;
+      border-radius: 1px;
+      flex-shrink: 0;
+    }
+
+    .legend-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── LOADING / ERROR ───────────────────────────────────────── */
+    .load-state {
+      padding: 4rem;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .load-error {
+      color: #e06060;
+    }
+
+    /* ── FOOTER ────────────────────────────────────────────────── */
+    footer {
+      padding: 2rem 4rem;
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="header-left">
+    <div class="dataset-eyebrow">Audio-Visual Dataset</div>
+    <div class="dataset-title">H2H Music Improv Dataset</div>
+    <div class="dataset-subtitle">Human-to-Human Free Improvisation with Bidirectional Intention Annotations</div>
+  </div>
+  <div class="header-links">
+    <a class="btn-link primary" href="#" id="link-zenodo">Zenodo ↗</a>
+    <a class="btn-link" href="datasheet.html">Datasheet ↗</a>
+    <a class="btn-link" href="#" id="link-paper">Paper ↗</a>
+  </div>
+</header>
+
+<!-- ── DESCRIPTION ─────────────────────────────────────────────────────────── -->
+<div class="description">
+  <div class="desc-block">
+    <div class="desc-label">Overview</div>
+    <div class="desc-text">~6 hours of expert duo free improvisations with per-player audio stems and synchronized video. Six clips across three musician pairings.</div>
+  </div>
+  <div class="desc-block">
+    <div class="desc-label">Annotations</div>
+    <div class="desc-text">Bidirectional: each performer annotated their own intentions and their perception of their partner's actions using a shared initiation/agreement vocabulary.</div>
+  </div>
+  <div class="desc-block">
+    <div class="desc-label">How to use</div>
+    <div class="desc-text">Click anywhere on an annotation timeline to seek the video to that moment. Bars show communication phases derived from each player's annotation perspective.</div>
+  </div>
+</div>
+
+<!-- ── CLIPS ───────────────────────────────────────────────────────────────── -->
+<div class="clips-container" id="clips-container">
+  <div class="load-state" id="load-status">Loading annotation data…</div>
+</div>
+
+<!-- ── LEGEND (shared, appended once) ──────────────────────────────────────── -->
+<template id="legend-tpl">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--nego)"></div><span class="legend-label">negotiation</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--prop)"></div><span class="legend-label">proposal</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--stab)"></div><span class="legend-label">stability</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--end)"></div><span class="legend-label">ending</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--unk)"></div><span class="legend-label">unknown</span></div>
+  </div>
+</template>
+
+<footer>
+  H2H Music Improv Dataset &nbsp;·&nbsp; Click timeline to seek video &nbsp;·&nbsp; Phase colors: negotiation / proposal / stability
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  CONFIG — edit these before deploying
+// ═══════════════════════════════════════════════════════════════════════════
+const CSV_PATH = 'data/master.csv';   // relative to this HTML file
+
+//  Add YouTube IDs here once you have them.
+//  Leave youtubeId as null to show a placeholder.
+const CLIP_META = [
+  { id: '11-19-2025-Clip1', label: 'Clip 1', pairing: 'Jeff × Anthony',    youtubeId: null },
+  { id: '11-19-2025-Clip2', label: 'Clip 2', pairing: 'Jeff × Anthony',    youtubeId: null },
+  { id: '11-19-2025-Clip3', label: 'Clip 3', pairing: 'Jeff × Anthony',    youtubeId: null },
+  { id: '03-24-2026-Clip4', label: 'Clip 4', pairing: 'Jeff × Alexandria', youtubeId: null },
+  { id: '03-24-2026-Clip5', label: 'Clip 5', pairing: 'Jeff × Alexandria', youtubeId: null },
+  { id: '03-24-2026-Clip6', label: 'Clip 6', pairing: 'Jeff × Alexandria', youtubeId: null },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PHASE LOGIC (ported from visualize.py)
+// ═══════════════════════════════════════════════════════════════════════════
+const PHASE_MAP = {
+  'initiation,initiation': 'negotiation',
+  'initiation,agreement':  'proposal',
+  'agreement,initiation':  'stability',
+};
+
+const PHASE_CSS = {
+  negotiation: 'var(--nego)',
+  proposal:    'var(--prop)',
+  stability:   'var(--stab)',
+  ending:      'var(--end)',
+  unknown:     'var(--unk)',
+};
+
+function parseStart(val) {
+  const s = String(val).trim();
+  const colonIdx = s.indexOf(':');
+  if (colonIdx === -1) return parseFloat(s) || null;
+  return parseInt(s.slice(0, colonIdx), 10) * 60 + parseFloat(s.slice(colonIdx + 1));
+}
+
+function computePhases(events, clipDuration) {
+  const phases = [];
+  for (let i = 0; i < events.length - 1; i++) {
+    const [t0, a0] = events[i];
+    const [t1, a1] = events[i + 1];
+    phases.push({ start: t0, end: t1, phase: PHASE_MAP[`${a0},${a1}`] || 'unknown' });
+  }
+  if (events.length > 0) {
+    const [tLast] = events[events.length - 1];
+    phases.push({ start: tLast, end: clipDuration, phase: 'ending' });
+  }
+  return phases;
+}
+
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = String(Math.floor(secs % 60)).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  YOUTUBE
+// ═══════════════════════════════════════════════════════════════════════════
+const players = {};
+
+window.onYouTubeIframeAPIReady = function () {
+  CLIP_META.forEach(({ id, youtubeId }) => {
+    if (!youtubeId) return;
+    players[id] = new YT.Player(`yt-player-${id}`, {
+      videoId: youtubeId,
+      playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+    });
+  });
+
+  // Start playhead polling
+  setInterval(updatePlayheads, 250);
+};
+
+function seekClip(clipId, seconds) {
+  const p = players[clipId];
+  if (p && typeof p.seekTo === 'function') {
+    p.seekTo(seconds, true);
+    p.playVideo();
+  }
+  const el = document.getElementById(`seek-readout-${clipId}`);
+  if (el) {
+    el.textContent = `→ ${formatTime(seconds)}`;
+    el.style.opacity = 1;
+  }
+}
+
+function updatePlayheads() {
+  Object.entries(players).forEach(([clipId, p]) => {
+    if (!p || typeof p.getCurrentTime !== 'function') return;
+    const t = p.getCurrentTime();
+    const dur = p.getDuration();
+    if (!dur) return;
+    const frac = t / dur;
+    const ph = document.getElementById(`playhead-${clipId}`);
+    if (!ph) return;
+    // ph stores data-x0 and data-x1 for the drawable range
+    const x0 = parseFloat(ph.dataset.x0);
+    const x1 = parseFloat(ph.dataset.x1);
+    const x = x0 + frac * (x1 - x0);
+    ph.setAttribute('x1', x);
+    ph.setAttribute('x2', x);
+    ph.setAttribute('opacity', 0.9);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SVG TIMELINE
+// ═══════════════════════════════════════════════════════════════════════════
+const VB_W       = 1000;
+const LABEL_W    = 80;   // left label column in viewBox units
+const DRAW_W     = VB_W - LABEL_W - 8;
+const TRACK_H    = 30;
+const TRACK_GAP  = 10;
+const AXIS_H     = 22;
+const TOP_PAD    = 6;
+
+function makeSVGEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function buildTimeline(clipId, clipData, clipDuration) {
+  const instruments = [...new Set(clipData.map(r => r.annotation_providing_instrument))].sort();
+  const nTracks     = instruments.length;
+  const vbH         = TOP_PAD + nTracks * (TRACK_H + TRACK_GAP) + AXIS_H;
+
+  const svg = makeSVGEl('svg', {
+    class:   'timeline',
+    viewBox: `0 0 ${VB_W} ${vbH}`,
+    height:  vbH,   // intrinsic height so auto-sizing works
+  });
+
+  const xOf = t => LABEL_W + (t / clipDuration) * DRAW_W;
+
+  // ── per-instrument tracks
+  instruments.forEach((inst, idx) => {
+    const trackY = TOP_PAD + idx * (TRACK_H + TRACK_GAP);
+
+    // label
+    svg.appendChild(makeSVGEl('text', {
+      x: LABEL_W - 6, y: trackY + TRACK_H / 2 + 4,
+      'text-anchor': 'end', 'font-size': '10',
+      fill: 'var(--muted)', 'font-family': 'var(--font-mono)',
+    })).textContent = inst;
+
+    // track bg
+    svg.appendChild(makeSVGEl('rect', {
+      x: LABEL_W, y: trackY, width: DRAW_W, height: TRACK_H,
+      fill: 'rgba(255,255,255,0.04)', rx: '2',
+    }));
+
+    // events → phases
+    const events = clipData
+      .filter(r => r.annotation_providing_instrument === inst)
+      .map(r => [parseStart(r.start), r.action])
+      .filter(([t]) => t !== null)
+      .sort((a, b) => a[0] - b[0]);
+
+    const phases = computePhases(events, clipDuration);
+
+    phases.forEach(({ start, end, phase }) => {
+      const x = xOf(start);
+      const w = Math.max(xOf(end) - xOf(start), 1);
+      const bar = makeSVGEl('rect', {
+        x, y: trackY, width: w, height: TRACK_H,
+        fill: PHASE_CSS[phase] || 'var(--unk)', rx: '1',
+      });
+      const tt = makeSVGEl('title', {});
+      tt.textContent = `${phase}  ${formatTime(start)} – ${formatTime(end)}`;
+      bar.appendChild(tt);
+      svg.appendChild(bar);
+    });
+
+    // tick marks at event points
+    events.forEach(([t, action]) => {
+      const x = xOf(t);
+      svg.appendChild(makeSVGEl('line', {
+        x1: x, x2: x, y1: trackY, y2: trackY + TRACK_H,
+        stroke: 'rgba(0,0,0,0.4)', 'stroke-width': '1.5',
+      }));
+    });
+  });
+
+  // ── x-axis
+  const axisY = TOP_PAD + nTracks * (TRACK_H + TRACK_GAP);
+
+  svg.appendChild(makeSVGEl('line', {
+    x1: LABEL_W, x2: LABEL_W + DRAW_W, y1: axisY, y2: axisY,
+    stroke: 'var(--border)', 'stroke-width': '1',
+  }));
+
+  const interval = clipDuration <= 300 ? 30 : 60;
+  for (let t = 0; t <= clipDuration; t += interval) {
+    const x = xOf(t);
+    svg.appendChild(makeSVGEl('line', {
+      x1: x, x2: x, y1: axisY, y2: axisY + 5,
+      stroke: 'var(--muted)', 'stroke-width': '1',
+    }));
+    svg.appendChild(makeSVGEl('text', {
+      x, y: axisY + 16, 'text-anchor': 'middle',
+      'font-size': '9', fill: 'var(--muted)', 'font-family': 'var(--font-mono)',
+    })).textContent = formatTime(t);
+  }
+
+  // ── hover line
+  const hoverLine = makeSVGEl('line', {
+    class: 'hover-line',
+    x1: LABEL_W, x2: LABEL_W, y1: TOP_PAD, y2: axisY,
+    stroke: 'rgba(200,169,110,0.5)', 'stroke-width': '1',
+    'stroke-dasharray': '3 3', opacity: '0', 'pointer-events': 'none',
+  });
+  svg.appendChild(hoverLine);
+
+  // ── playhead
+  const playhead = makeSVGEl('line', {
+    id: `playhead-${clipId}`,
+    x1: LABEL_W, x2: LABEL_W, y1: TOP_PAD, y2: axisY,
+    stroke: '#e05555', 'stroke-width': '1.5', opacity: '0', 'pointer-events': 'none',
+    'data-x0': LABEL_W, 'data-x1': LABEL_W + DRAW_W,
+  });
+  svg.appendChild(playhead);
+
+  // ── interaction
+  svg.addEventListener('mousemove', (e) => {
+    const bbox    = svg.getBoundingClientRect();
+    const scaleX  = VB_W / bbox.width;
+    const svgX    = (e.clientX - bbox.left) * scaleX;
+    if (svgX < LABEL_W || svgX > LABEL_W + DRAW_W) {
+      hoverLine.setAttribute('opacity', 0);
+      return;
+    }
+    hoverLine.setAttribute('x1', svgX);
+    hoverLine.setAttribute('x2', svgX);
+    hoverLine.setAttribute('opacity', 1);
+  });
+
+  svg.addEventListener('mouseleave', () => {
+    hoverLine.setAttribute('opacity', 0);
+  });
+
+  svg.addEventListener('click', (e) => {
+    const bbox   = svg.getBoundingClientRect();
+    const scaleX = VB_W / bbox.width;
+    const svgX   = (e.clientX - bbox.left) * scaleX;
+    const frac   = Math.max(0, Math.min(1, (svgX - LABEL_W) / DRAW_W));
+    if (svgX < LABEL_W) return;
+    const seconds = frac * clipDuration;
+
+    // snap playhead immediately
+    const phX = LABEL_W + frac * DRAW_W;
+    playhead.setAttribute('x1', phX);
+    playhead.setAttribute('x2', phX);
+    playhead.setAttribute('opacity', 0.9);
+
+    seekClip(clipId, seconds);
+  });
+
+  return svg;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PAGE RENDER
+// ═══════════════════════════════════════════════════════════════════════════
+function renderClips(allData) {
+  const container = document.getElementById('clips-container');
+  container.innerHTML = '';
+
+  const legendTpl = document.getElementById('legend-tpl');
+
+  CLIP_META.forEach(({ id, label, pairing, youtubeId }) => {
+    const clipData = allData.filter(r => r.id === id);
+
+    if (!clipData.length) {
+      // Show placeholder card so the page structure is complete
+      const missing = document.createElement('div');
+      missing.className = 'clip-section';
+      missing.innerHTML = `
+        <div class="clip-header">
+          <span class="clip-id">${id}</span>
+          <span class="clip-pairing">${pairing}</span>
+          <span class="clip-duration-label">no data</span>
+        </div>`;
+      container.appendChild(missing);
+      return;
+    }
+
+    const clipDuration = parseFloat(clipData[0].clip_duration);
+
+    const section = document.createElement('div');
+    section.className = 'clip-section';
+    section.id = `clip-${id}`;
+
+    // ── header
+    const header = document.createElement('div');
+    header.className = 'clip-header';
+    header.innerHTML = `
+      <span class="clip-id">${id}</span>
+      <span class="clip-pairing">${pairing}</span>
+      <span class="clip-duration-label">${formatTime(clipDuration)}</span>`;
+    section.appendChild(header);
+
+    // ── body
+    const body = document.createElement('div');
+    body.className = 'clip-body';
+
+    // video pane
+    const videoPaneHTML = youtubeId
+      ? `<div class="video-wrap"><iframe id="yt-player-${id}"
+           src="https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1"
+           allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`
+      : `<div class="video-wrap">
+           <div class="video-placeholder">
+             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+               <polygon points="5 3 19 12 5 21 5 3"/>
+             </svg>
+             <span>VIDEO COMING SOON</span>
+           </div>
+         </div>`;
+
+    const videoPaneEl = document.createElement('div');
+    videoPaneEl.className = 'video-pane';
+    videoPaneEl.innerHTML = videoPaneHTML;
+    body.appendChild(videoPaneEl);
+
+    // timeline pane
+    const tlPane = document.createElement('div');
+    tlPane.className = 'timeline-pane';
+    tlPane.innerHTML = `
+      <div class="timeline-header">
+        <span class="timeline-instruction">↑ click to seek · hover to scrub</span>
+        <span class="seek-readout" id="seek-readout-${id}"></span>
+      </div>
+      <div class="timeline-svg-wrap" id="tl-wrap-${id}"></div>`;
+    body.appendChild(tlPane);
+
+    section.appendChild(body);
+
+    // legend
+    section.appendChild(legendTpl.content.cloneNode(true));
+
+    container.appendChild(section);
+
+    // inject SVG
+    const svgWrap = document.getElementById(`tl-wrap-${id}`);
+    svgWrap.appendChild(buildTimeline(id, clipData, clipDuration));
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  LOAD
+// ═══════════════════════════════════════════════════════════════════════════
+Papa.parse(CSV_PATH, {
+  download:        true,
+  header:          true,
+  skipEmptyLines:  true,
+  complete: ({ data, errors }) => {
+    if (!data.length) {
+      document.getElementById('load-status').innerHTML =
+        `<span class="load-error">CSV loaded but appears empty. Check: ${CSV_PATH}</span>`;
+      return;
+    }
+    renderClips(data);
+  },
+  error: (err) => {
+    document.getElementById('load-status').innerHTML =
+      `<span class="load-error">Could not load ${CSV_PATH}<br>
+       Make sure the file exists and you're serving this page via a local server (e.g. <code>python -m http.server</code>).</span>`;
+    console.error(err);
+  },
+});
+</script>
+
+<!-- YouTube IFrame API — async, harmless if no IDs are set -->
+<script src="https://www.youtube.com/iframe_api" async></script>
+
+</body>
+</html>
