@@ -179,12 +179,11 @@
     }
 
     .clip-body {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
     }
 
     @media (max-width: 900px) {
-      .clip-body { grid-template-columns: 1fr; }
       header { padding: 2rem; }
       .description { padding: 1.5rem 2rem; grid-template-columns: 1fr; gap: 1rem; }
       .clips-container { padding: 0 2rem 3rem; }
@@ -193,7 +192,6 @@
     /* ── VIDEO PANE ────────────────────────────────────────────── */
     .video-pane {
       padding: 1.25rem;
-      border-right: 1px solid var(--border);
     }
 
     .video-wrap {
@@ -354,15 +352,15 @@
 <div class="description">
   <div class="desc-block">
     <div class="desc-label">Overview</div>
-    <div class="desc-text">~6 hours of expert duo free improvisations with per-player audio stems and synchronized video. Six clips across three musician pairings.</div>
+    <div class="desc-text">~6 hours of expert duo free improvisations with per-player audio stems and synchronized video. Here we show one clip from each of the 6 musician pairings.</div>
   </div>
   <div class="desc-block">
     <div class="desc-label">Annotations</div>
-    <div class="desc-text">Bidirectional: each performer annotated their own intentions and their perception of their partner's actions using a shared initiation/agreement vocabulary.</div>
+    <div class="desc-text">Bidirectional: each performer annotated their own intentions and their perception of their partner's actions using our proposed communication model.</div>
   </div>
   <div class="desc-block">
     <div class="desc-label">How to use</div>
-    <div class="desc-text">Click anywhere on an annotation timeline to seek the video to that moment. Bars show communication phases derived from each player's annotation perspective.</div>
+    <div class="desc-text">Click anywhere on an annotation timeline to seek the video to that moment. Bars show improvisation states derived from each player's annotation perspective.</div>
   </div>
 </div>
 
@@ -390,17 +388,19 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //  CONFIG — edit these before deploying
 // ═══════════════════════════════════════════════════════════════════════════
-const CSV_PATH = 'data/master.csv';   // relative to this HTML file
+const CSV_PATH        = 'data/master.csv';
+const PERFORMERS_PATH = 'data/performers.csv';
 
 //  Add YouTube IDs here once you have them.
 //  Leave youtubeId as null to show a placeholder.
+//  Pairings are derived automatically from performers.csv.
 const CLIP_META = [
-  { id: '11-19-2025-Clip1', label: 'Clip 1', pairing: 'Jeff × Anthony',    youtubeId: null },
-  { id: '11-19-2025-Clip2', label: 'Clip 2', pairing: 'Jeff × Anthony',    youtubeId: null },
-  { id: '11-19-2025-Clip3', label: 'Clip 3', pairing: 'Jeff × Anthony',    youtubeId: null },
-  { id: '03-24-2026-Clip4', label: 'Clip 4', pairing: 'Jeff × Alexandria', youtubeId: null },
-  { id: '03-24-2026-Clip5', label: 'Clip 5', pairing: 'Jeff × Alexandria', youtubeId: null },
-  { id: '03-24-2026-Clip6', label: 'Clip 6', pairing: 'Jeff × Alexandria', youtubeId: null },
+  { id: '11-19-2025-Clip1', label: 'Clip 1', youtubeId: null },
+  { id: '11-19-2025-Clip2', label: 'Clip 2', youtubeId: null },
+  { id: '11-19-2025-Clip3', label: 'Clip 3', youtubeId: 'Tg3z55bgLSk' },
+  { id: '03-24-2026-Clip4', label: 'Clip 4', youtubeId: null },
+  { id: '03-24-2026-Clip5', label: 'Clip 5', youtubeId: null },
+  { id: '03-24-2026-Clip6', label: 'Clip 6', youtubeId: null },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -450,7 +450,9 @@ function formatTime(secs) {
 // ═══════════════════════════════════════════════════════════════════════════
 //  YOUTUBE
 // ═══════════════════════════════════════════════════════════════════════════
-const players = {};
+const players      = {};
+const clipDurations = {};  // clipId → authoritative duration (updated from player once loaded)
+const clipDataStore = {};  // clipId → CSV rows, used to rebuild SVG when player duration arrives
 
 window.onYouTubeIframeAPIReady = function () {
   CLIP_META.forEach(({ id, youtubeId }) => {
@@ -458,10 +460,21 @@ window.onYouTubeIframeAPIReady = function () {
     players[id] = new YT.Player(`yt-player-${id}`, {
       videoId: youtubeId,
       playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+      events: {
+        onReady(e) {
+          const dur = e.target.getDuration();
+          if (!dur || !clipDataStore[id]) return;
+          clipDurations[id] = dur;
+          const wrap = document.getElementById(`tl-wrap-${id}`);
+          if (wrap) {
+            wrap.innerHTML = '';
+            wrap.appendChild(buildTimeline(id, clipDataStore[id], dur));
+          }
+        },
+      },
     });
   });
 
-  // Start playhead polling
   setInterval(updatePlayheads, 250);
 };
 
@@ -482,7 +495,7 @@ function updatePlayheads() {
   Object.entries(players).forEach(([clipId, p]) => {
     if (!p || typeof p.getCurrentTime !== 'function') return;
     const t = p.getCurrentTime();
-    const dur = p.getDuration();
+    const dur = clipDurations[clipId] || p.getDuration();
     if (!dur) return;
     const frac = t / dur;
     const ph = document.getElementById(`playhead-${clipId}`);
@@ -501,8 +514,8 @@ function updatePlayheads() {
 //  SVG TIMELINE
 // ═══════════════════════════════════════════════════════════════════════════
 const VB_W       = 1000;
-const LABEL_W    = 80;   // left label column in viewBox units
-const DRAW_W     = VB_W - LABEL_W - 8;
+const LABEL_W    = 0;
+const DRAW_W     = VB_W;
 const TRACK_H    = 30;
 const TRACK_GAP  = 10;
 const AXIS_H     = 22;
@@ -515,7 +528,7 @@ function makeSVGEl(tag, attrs) {
 }
 
 function buildTimeline(clipId, clipData, clipDuration) {
-  const instruments = [...new Set(clipData.map(r => r.annotation_providing_instrument))].sort();
+  const instruments = [...new Set(clipData.map(r => r.annotation_providing_instrument + r.performer_id))].sort();
   const nTracks     = instruments.length;
   const vbH         = TOP_PAD + nTracks * (TRACK_H + TRACK_GAP) + AXIS_H;
 
@@ -531,13 +544,6 @@ function buildTimeline(clipId, clipData, clipDuration) {
   instruments.forEach((inst, idx) => {
     const trackY = TOP_PAD + idx * (TRACK_H + TRACK_GAP);
 
-    // label
-    svg.appendChild(makeSVGEl('text', {
-      x: LABEL_W - 6, y: trackY + TRACK_H / 2 + 4,
-      'text-anchor': 'end', 'font-size': '10',
-      fill: 'var(--muted)', 'font-family': 'var(--font-mono)',
-    })).textContent = inst;
-
     // track bg
     svg.appendChild(makeSVGEl('rect', {
       x: LABEL_W, y: trackY, width: DRAW_W, height: TRACK_H,
@@ -546,7 +552,7 @@ function buildTimeline(clipId, clipData, clipDuration) {
 
     // events → phases
     const events = clipData
-      .filter(r => r.annotation_providing_instrument === inst)
+      .filter(r => r.annotation_providing_instrument + r.performer_id === inst)
       .map(r => [parseStart(r.start), r.action])
       .filter(([t]) => t !== null)
       .sort((a, b) => a[0] - b[0]);
@@ -574,6 +580,17 @@ function buildTimeline(clipId, clipData, clipDuration) {
         stroke: 'rgba(0,0,0,0.4)', 'stroke-width': '1.5',
       }));
     });
+
+    // instrument label overlaid at track start (drawn last so it sits on top)
+    svg.appendChild(makeSVGEl('rect', {
+      x: 0, y: trackY, width: 88, height: TRACK_H,
+      fill: 'rgba(18,17,15,0.6)',
+    }));
+    svg.appendChild(makeSVGEl('text', {
+      x: 6, y: trackY + TRACK_H / 2 + 4,
+      'text-anchor': 'start', 'font-size': '10',
+      fill: 'var(--muted)', 'font-family': 'var(--font-mono)',
+    })).textContent = inst;
   });
 
   // ── x-axis
@@ -656,30 +673,30 @@ function buildTimeline(clipId, clipData, clipDuration) {
 // ═══════════════════════════════════════════════════════════════════════════
 //  PAGE RENDER
 // ═══════════════════════════════════════════════════════════════════════════
-function renderClips(allData) {
+function renderClips(allData, performersData) {
+  // build date → sorted [instrument+id, ...] lookup from performers.csv
+  const perfLookup = {};
+  (performersData || []).forEach(row => {
+    const d = row.date_recorded;
+    if (!perfLookup[d]) perfLookup[d] = [];
+    perfLookup[d].push(row.annotation_providing_instrument + row.performer_id);
+  });
+
   const container = document.getElementById('clips-container');
   container.innerHTML = '';
 
   const legendTpl = document.getElementById('legend-tpl');
 
-  CLIP_META.forEach(({ id, label, pairing, youtubeId }) => {
+  CLIP_META.filter(m => m.youtubeId).forEach(({ id, label, youtubeId }) => {
+    const clipDate = id.slice(0, 10); // MM-DD-YYYY prefix of the clip id
+    const pairing  = (perfLookup[clipDate] || []).slice().sort().join(' × ');
     const clipData = allData.filter(r => r.id === id);
 
-    if (!clipData.length) {
-      // Show placeholder card so the page structure is complete
-      const missing = document.createElement('div');
-      missing.className = 'clip-section';
-      missing.innerHTML = `
-        <div class="clip-header">
-          <span class="clip-id">${id}</span>
-          <span class="clip-pairing">${pairing}</span>
-          <span class="clip-duration-label">no data</span>
-        </div>`;
-      container.appendChild(missing);
-      return;
-    }
+    if (!clipData.length) return;
 
-    const clipDuration = parseFloat(clipData[0].clip_duration);
+    const clipDuration  = parseFloat(clipData[0].clip_duration);
+    clipDurations[id]   = clipDuration;
+    clipDataStore[id]   = clipData;
 
     const section = document.createElement('div');
     section.className = 'clip-section';
@@ -744,25 +761,31 @@ function renderClips(allData) {
 // ═══════════════════════════════════════════════════════════════════════════
 //  LOAD
 // ═══════════════════════════════════════════════════════════════════════════
-Papa.parse(CSV_PATH, {
-  download:        true,
-  header:          true,
-  skipEmptyLines:  true,
-  complete: ({ data, errors }) => {
-    if (!data.length) {
+function loadCSV(path) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(path, {
+      download: true, header: true, skipEmptyLines: true,
+      complete: ({ data }) => resolve(data),
+      error: reject,
+    });
+  });
+}
+
+Promise.all([loadCSV(CSV_PATH), loadCSV(PERFORMERS_PATH)])
+  .then(([masterData, performersData]) => {
+    if (!masterData.length) {
       document.getElementById('load-status').innerHTML =
         `<span class="load-error">CSV loaded but appears empty. Check: ${CSV_PATH}</span>`;
       return;
     }
-    renderClips(data);
-  },
-  error: (err) => {
+    renderClips(masterData, performersData);
+  })
+  .catch(err => {
     document.getElementById('load-status').innerHTML =
-      `<span class="load-error">Could not load ${CSV_PATH}<br>
-       Make sure the file exists and you're serving this page via a local server (e.g. <code>python -m http.server</code>).</span>`;
+      `<span class="load-error">Could not load data files.<br>
+       Make sure the files exist and you're serving this page via a local server (e.g. <code>python -m http.server</code>).</span>`;
     console.error(err);
-  },
-});
+  });
 </script>
 
 <!-- YouTube IFrame API — async, harmless if no IDs are set -->
