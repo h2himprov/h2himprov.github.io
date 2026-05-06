@@ -249,14 +249,26 @@
 
     .timeline-instruction {
       font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 0.06em;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      opacity: 0.85;
+      display: flex;
+      align-items: center;
+      gap: 0.3em;
+    }
+    @keyframes bounce-down {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(3px); }
+    }
+    .timeline-instruction-arrow {
+      display: inline-block;
+      animation: bounce-down 1.4s ease-in-out infinite;
     }
 
     .seek-readout {
       font-family: var(--font-mono);
-      font-size: 10px;
+      font-size: 11px;
       color: var(--accent);
       letter-spacing: 0.06em;
       min-height: 1.2em;
@@ -265,12 +277,18 @@
 
     .timeline-svg-wrap {
       width: 100%;
+      border-radius: 3px;
+      transition: box-shadow 0.15s;
+    }
+
+    .timeline-svg-wrap:hover {
+      box-shadow: 0 0 0 1.5px var(--accent);
     }
 
     svg.timeline {
       width: 100%;
       display: block;
-      cursor: crosshair;
+      cursor: pointer;
       overflow: visible;
     }
 
@@ -343,9 +361,9 @@
     <div class="dataset-subtitle">Human-to-Human Free Improvisation with Bidirectional Intention Annotations</div>
   </div>
   <div class="header-links">
-    <a class="btn-link primary" href="#" id="link-zenodo">Zenodo ↗</a>
-    <a class="btn-link" href="datasheet.html">Datasheet ↗</a>
-    <a class="btn-link" href="#" id="link-paper">Paper ↗</a>
+    <a class="btn-link primary" href="javascript:void(0)" id="link-zenodo" style="display:none">Zenodo ↗</a>
+    <a class="btn-link" href="datasheet.html" style="display:none">Datasheet ↗</a>
+    <a class="btn-link" href="javascript:void(0)" id="link-paper" style="display:none">Paper ↗</a>
   </div>
 </header>
 
@@ -451,12 +469,16 @@ const players      = {};
 const clipDurations = {};  // clipId → authoritative duration (updated from player once loaded)
 const clipDataStore = {};  // clipId → CSV rows, used to rebuild SVG when player duration arrives
 
-window.onYouTubeIframeAPIReady = function () {
+let ytApiReady    = false;
+let clipsRendered = false;
+
+function initPlayers() {
+  if (!ytApiReady || !clipsRendered) return;
   CLIP_META.forEach(({ id, youtubeId }) => {
     if (!youtubeId) return;
     players[id] = new YT.Player(`yt-player-${id}`, {
       videoId: youtubeId,
-      playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+      playerVars: { rel: 0, modestbranding: 1, playsinline: 1, origin: window.location.origin },
       events: {
         onReady(e) {
           const dur = e.target.getDuration();
@@ -471,8 +493,12 @@ window.onYouTubeIframeAPIReady = function () {
       },
     });
   });
-
   setInterval(updatePlayheads, 250);
+}
+
+window.onYouTubeIframeAPIReady = function () {
+  ytApiReady = true;
+  initPlayers();
 };
 
 function seekClip(clipId, seconds) {
@@ -483,7 +509,7 @@ function seekClip(clipId, seconds) {
   }
   const el = document.getElementById(`seek-readout-${clipId}`);
   if (el) {
-    el.textContent = `→ ${formatTime(seconds)}`;
+    el.textContent = `jumped to ${formatTime(seconds)}`;
     el.style.opacity = 1;
   }
 }
@@ -615,7 +641,7 @@ function buildTimeline(clipId, clipData, clipDuration) {
   const hoverLine = makeSVGEl('line', {
     class: 'hover-line',
     x1: LABEL_W, x2: LABEL_W, y1: TOP_PAD, y2: axisY,
-    stroke: 'rgba(200,169,110,0.5)', 'stroke-width': '1',
+    stroke: 'rgba(255,255,255,0.75)', 'stroke-width': '1.5',
     'stroke-dasharray': '3 3', opacity: '0', 'pointer-events': 'none',
   });
   svg.appendChild(hoverLine);
@@ -630,10 +656,15 @@ function buildTimeline(clipId, clipData, clipDuration) {
   svg.appendChild(playhead);
 
   // ── interaction
+  function clientToSvgX(e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+  }
+
   svg.addEventListener('mousemove', (e) => {
-    const bbox    = svg.getBoundingClientRect();
-    const scaleX  = VB_W / bbox.width;
-    const svgX    = (e.clientX - bbox.left) * scaleX;
+    const svgX = clientToSvgX(e);
     if (svgX < LABEL_W || svgX > LABEL_W + DRAW_W) {
       hoverLine.setAttribute('opacity', 0);
       return;
@@ -648,9 +679,7 @@ function buildTimeline(clipId, clipData, clipDuration) {
   });
 
   svg.addEventListener('click', (e) => {
-    const bbox   = svg.getBoundingClientRect();
-    const scaleX = VB_W / bbox.width;
-    const svgX   = (e.clientX - bbox.left) * scaleX;
+    const svgX   = clientToSvgX(e);
     const frac   = Math.max(0, Math.min(1, (svgX - LABEL_W) / DRAW_W));
     if (svgX < LABEL_W) return;
     const seconds = frac * clipDuration;
@@ -714,9 +743,7 @@ function renderClips(allData, performersData) {
 
     // video pane
     const videoPaneHTML = youtubeId
-      ? `<div class="video-wrap"><iframe id="yt-player-${id}"
-           src="https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1"
-           allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`
+      ? `<div class="video-wrap"><div id="yt-player-${id}"></div></div>`
       : `<div class="video-wrap">
            <div class="video-placeholder">
              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -736,7 +763,7 @@ function renderClips(allData, performersData) {
     tlPane.className = 'timeline-pane';
     tlPane.innerHTML = `
       <div class="timeline-header">
-        <span class="timeline-instruction">↑ click to seek · hover to scrub</span>
+        <span class="timeline-instruction"><span class="timeline-instruction-arrow">↓</span> hover to preview · click to play</span>
         <span class="seek-readout" id="seek-readout-${id}"></span>
       </div>
       <div class="timeline-svg-wrap" id="tl-wrap-${id}"></div>`;
@@ -776,6 +803,8 @@ Promise.all([loadCSV(CSV_PATH), loadCSV(PERFORMERS_PATH)])
       return;
     }
     renderClips(masterData, performersData);
+    clipsRendered = true;
+    initPlayers();
   })
   .catch(err => {
     document.getElementById('load-status').innerHTML =

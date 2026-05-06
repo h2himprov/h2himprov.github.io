@@ -32,16 +32,24 @@ Real names are not present anywhere in the site or CSVs. Instrument+ID labels ar
 | Alexandria | trumpet5 |
 | Danny | trombone4 |
 
-## Completed this session
+## Completed
 - **Layout**: annotation timeline stacked directly below video (was side-by-side)
 - **Bar alignment**: video and annotation bar share the same horizontal padding via `.clip-body`, guaranteeing identical pixel width
 - **Duration sync**: SVG timeline rebuilds from `p.getDuration()` once the YouTube player reports its real duration, so bar scale, click-to-seek, and playhead are all consistent
 - **performers.csv linked**: pairings (e.g. `trombone2 × guitar1`) auto-derived from performers.csv by matching date prefix of clip ID; track labels show `instrument+id` (e.g. `guitar1`, `trombone2`)
 - **Anonymization**: all real names removed from site
 - **Show only linked clips**: only clips with a `youtubeId` are rendered
-- **Visualization**: ending and unknown phases excluded; only negotiation / proposal / stability shown
+- **Visualization**: no-ending mode (last phase extends to clip end using synthetic `initiation` endpoint); unknown phases excluded; legend trimmed to negotiation / proposal / stability only
+- **Click-to-seek fix (deployed)**: switched video pane from pre-built `<iframe>` to `<div>` placeholder so `YT.Player` owns the iframe; added `origin: window.location.origin` to `playerVars`
+- **Race condition fix**: `initPlayers()` now gates on both `ytApiReady` and `clipsRendered` flags, so YouTube players are never created before the DOM exists
+- **`href="#"` fix**: Zenodo and Paper placeholder buttons changed to `javascript:void(0)` so clicking them no longer appends `#` to the URL (which broke YouTube postMessage validation)
+- **Click-to-seek UX**: plain-language instruction ("Click the bar to jump to that moment in the video"), gold hover glow on the bar, cursor changed to pointer, seek feedback says "jumped to X:XX"
+
+## ⚠️ Not yet committed to GitHub
+All changes above are local only. Need to `git add` + `git commit` + `git push` before they appear on the live site.
 
 ## Pending / next session
+- **Commit & push**: push all local changes to GitHub Pages
 - **Per-stem audio**: embed native `<audio>` elements (one per performer stem) below the annotation bar
 - **Seek-target selector**: pill/toggle above the annotation to choose which component (video or a stem) click-to-seek controls
 - **Remaining YouTube IDs**: upload and add IDs for Clips 1, 2, 4, 5, 6
@@ -53,3 +61,11 @@ cd "/Volumes/mtsandra-t9/H2H Data/h2himprov.github.io"
 python3 -m http.server 8080
 ```
 Then open http://localhost:8080. (VS Code Live Server also works and auto-reloads.)
+
+## How to deploy
+```
+git add -A
+git commit -m "your message"
+git push
+```
+GitHub Pages auto-deploys from the `main` branch within ~1 minute.
