@@ -137,6 +137,11 @@
       line-height: 1.65;
     }
 
+    .desc-text strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
     /* ── CLIPS ─────────────────────────────────────────────────── */
     .clips-container {
       padding: 0 4rem 4rem;
@@ -188,6 +193,80 @@
       header { padding: 2rem; }
       .description { padding: 1.5rem 2rem; grid-template-columns: 1fr; gap: 1rem; }
       .clips-container { padding: 0 2rem 3rem; }
+    }
+
+    /* ── SOURCE TABS ───────────────────────────────────────────── */
+    .source-tabs {
+      display: flex;
+      gap: 0.4rem;
+      padding: 0.75rem 1.25rem 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .source-tab {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--muted);
+      padding: 0.3rem 0.75rem;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .source-tab:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .source-tab.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(200,169,110,0.08);
+    }
+
+    .source-tab:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    .stem-display {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .stem-display:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .stem-display.visible {
+      display: flex;
+    }
+
+    .stem-display-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .stem-display-hint {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      opacity: 0.6;
     }
 
     /* ── VIDEO PANE ────────────────────────────────────────────── */
@@ -301,9 +380,23 @@
       display: flex;
       gap: 1.25rem;
       flex-wrap: wrap;
-      padding: 0.75rem 1.5rem;
-      border-top: 1px solid var(--border);
-      background: var(--surface);
+      padding: 0;
+    }
+
+    .timeline-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .track-perspective {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      opacity: 0.55;
+      letter-spacing: 0.04em;
     }
 
     .legend-item {
@@ -371,15 +464,15 @@
 <div class="description">
   <div class="desc-block">
     <div class="desc-label">Overview</div>
-    <div class="desc-text">~6 hours of expert duo free improvisations with per-player audio stems and synchronized video. Here we show one clip from each of the 6 musician pairings.</div>
+    <div class="desc-text">~6 hours of <strong>expert duo free improvisations</strong> with <strong>per-player audio stems</strong> and synchronized video. Here we show one clip from each of the 6 musician pairings.</div>
   </div>
   <div class="desc-block">
     <div class="desc-label">Annotations</div>
-    <div class="desc-text">Bidirectional: each performer annotated their own intentions and their perception of their partner's actions using our proposed communication model.</div>
+    <div class="desc-text"><strong>Bidirectional:</strong> each performer annotated <strong>their own intentions</strong> and <strong>their perception of their partner's actions</strong> using our proposed communication model.</div>
   </div>
   <div class="desc-block">
     <div class="desc-label">How to use</div>
-    <div class="desc-text">Click anywhere on an annotation timeline to seek the video to that moment. Bars show improvisation states derived from each player's annotation perspective.</div>
+    <div class="desc-text">Select <strong>Mixture</strong> or an <strong>individual stem</strong>, then <strong>hover to preview</strong> a moment and <strong>click to play</strong> from there. Bars show improvisation states from each player's perspective.</div>
   </div>
 </div>
 
@@ -398,7 +491,7 @@
 </template>
 
 <footer>
-  H2H Music Improv Dataset &nbsp;·&nbsp; Click timeline to seek video &nbsp;·&nbsp; Phase colors: negotiation / proposal / stability
+  H2H Music Improv Dataset &nbsp;·&nbsp; Switch between mixture and stem audio &nbsp;·&nbsp; Phase colors: negotiation / proposal / stability
 </footer>
 
 <script>
@@ -411,11 +504,12 @@ const PERFORMERS_PATH = 'data/performers.csv';
 //  Add YouTube IDs here once you have them.
 //  Leave youtubeId as null to show a placeholder.
 //  Pairings are derived automatically from performers.csv.
+const R2 = 'https://pub-8fce360eec0244b892e1b99cbb0d6ffd.r2.dev';
 const CLIP_META = [
-  { id: '11-19-2025-Clip3', label: 'Clip 3', youtubeId: 'Tg3z55bgLSk' },
-  { id: '02-06-2026-Clip1', label: 'Clip 1', youtubeId: 'CUjmuYQIVi8' },
-  { id: '02-25-2026-Clip3', label: 'Clip 3', youtubeId: 'msjzGNtKxtE' },
-  { id: '03-24-2026-Clip5', label: 'Clip 5', youtubeId: 'teeeMxyw8Gk' },
+  { id: '11-19-2025-Clip3', label: 'Clip 3', youtubeId: 'Tg3z55bgLSk', stems: { guitar: `${R2}/11-19-2025-Clip3-guitar.wav`,   trombone: `${R2}/11-19-2025-Clip3-trombone.wav`  } },
+  { id: '02-06-2026-Clip1', label: 'Clip 1', youtubeId: 'CUjmuYQIVi8', stems: { guitar: `${R2}/02-06-2026-Clip1-guitar.wav`,   saxophone: `${R2}/02-06-2026-Clip1-saxophone.wav` } },
+  { id: '02-25-2026-Clip3', label: 'Clip 3', youtubeId: 'msjzGNtKxtE', stems: { saxophone: `${R2}/02-25-2026-Clip3-saxophone.wav`, trombone: `${R2}/02-25-2026-Clip3-trombone.wav` } },
+  { id: '03-24-2026-Clip5', label: 'Clip 5', youtubeId: 'teeeMxyw8Gk', stems: { guitar: `${R2}/03-24-2026-Clip5-guitar.wav`,   trombone: `${R2}/03-24-2026-Clip5-trombone.wav`  } },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -463,9 +557,11 @@ function formatTime(secs) {
 // ═══════════════════════════════════════════════════════════════════════════
 //  YOUTUBE
 // ═══════════════════════════════════════════════════════════════════════════
-const players      = {};
+const players       = {};
 const clipDurations = {};  // clipId → authoritative duration (updated from player once loaded)
 const clipDataStore = {};  // clipId → CSV rows, used to rebuild SVG when player duration arrives
+const stemAudios    = {};  // clipId → { instName: HTMLAudioElement }
+const activeSource  = {};  // clipId → 'mixture' | instName
 
 let ytApiReady    = false;
 let clipsRendered = false;
@@ -500,10 +596,19 @@ window.onYouTubeIframeAPIReady = function () {
 };
 
 function seekClip(clipId, seconds) {
-  const p = players[clipId];
-  if (p && typeof p.seekTo === 'function') {
-    p.seekTo(seconds, true);
-    p.playVideo();
+  const src = activeSource[clipId] || 'mixture';
+  if (src === 'mixture') {
+    const p = players[clipId];
+    if (p && typeof p.seekTo === 'function') {
+      p.seekTo(seconds, true);
+      p.playVideo();
+    }
+  } else {
+    const audio = stemAudios[clipId]?.[src];
+    if (audio && audio.src) {
+      audio.currentTime = seconds;
+      audio.play().then(() => updateStemHint(clipId));
+    }
   }
   const el = document.getElementById(`seek-readout-${clipId}`);
   if (el) {
@@ -512,11 +617,83 @@ function seekClip(clipId, seconds) {
   }
 }
 
+function updateStemHint(clipId) {
+  const src   = activeSource[clipId];
+  const hint  = document.getElementById(`stem-hint-${clipId}`);
+  if (!hint || src === 'mixture') return;
+  const audio = stemAudios[clipId]?.[src];
+  hint.textContent = (audio && !audio.paused) ? 'click to pause' : 'click to play · or click the timeline to jump';
+}
+
+function setSource(clipId, source) {
+  const prev = activeSource[clipId];
+  activeSource[clipId] = source;
+
+  // read current time from the outgoing source for sync
+  let syncTime = null;
+  if (prev === 'mixture') {
+    const p = players[clipId];
+    if (p && typeof p.getCurrentTime === 'function') syncTime = p.getCurrentTime();
+  } else if (prev && stemAudios[clipId]?.[prev]) {
+    syncTime = stemAudios[clipId][prev].currentTime;
+  }
+
+  // update tab button states
+  document.querySelectorAll(`#clip-${clipId} .source-tab`).forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.source === source);
+  });
+
+  const ytPlayerEl  = document.getElementById(`yt-player-${clipId}`);
+  const stemDisplay = document.getElementById(`stem-display-${clipId}`);
+  const stemLabel   = document.getElementById(`stem-label-${clipId}`);
+
+  if (source === 'mixture') {
+    if (ytPlayerEl)  ytPlayerEl.style.display = '';
+    if (stemDisplay) stemDisplay.classList.remove('visible');
+    Object.values(stemAudios[clipId] || {}).forEach(a => a.pause());
+    // sync YouTube to where stem was
+    if (syncTime !== null) {
+      const p = players[clipId];
+      if (p && typeof p.seekTo === 'function') p.seekTo(syncTime, true);
+    }
+  } else {
+    const p = players[clipId];
+    if (p && typeof p.pauseVideo === 'function') p.pauseVideo();
+    if (ytPlayerEl)  ytPlayerEl.style.display = 'none';
+    if (stemDisplay) stemDisplay.classList.add('visible');
+    if (stemLabel)   stemLabel.textContent = `${source} stem`;
+    Object.entries(stemAudios[clipId] || {}).forEach(([inst, a]) => {
+      if (inst !== source) a.pause();
+    });
+    // sync audio to where mixture / previous stem was
+    const audio = stemAudios[clipId]?.[source];
+    if (audio && syncTime !== null) audio.currentTime = syncTime;
+    updateStemHint(clipId);
+  }
+
+  // dim non-selected tracks
+  const svgEl = document.querySelector(`#tl-wrap-${clipId} svg`);
+  if (svgEl) {
+    svgEl.querySelectorAll('[data-instrument]').forEach(g => {
+      g.style.opacity = (source === 'mixture' || g.dataset.instrument === source) ? '1' : '0.2';
+    });
+  }
+}
+
 function updatePlayheads() {
-  Object.entries(players).forEach(([clipId, p]) => {
-    if (!p || typeof p.getCurrentTime !== 'function') return;
-    const t = p.getCurrentTime();
-    const dur = clipDurations[clipId] || p.getDuration();
+  Object.keys(clipDurations).forEach(clipId => {
+    const src = activeSource[clipId] || 'mixture';
+    let t;
+    if (src === 'mixture') {
+      const p = players[clipId];
+      if (!p || typeof p.getCurrentTime !== 'function') return;
+      t = p.getCurrentTime();
+    } else {
+      const audio = stemAudios[clipId]?.[src];
+      if (!audio) return;
+      t = audio.currentTime;
+    }
+    const dur = clipDurations[clipId];
     if (!dur) return;
     const frac = t / dur;
     const ph = document.getElementById(`playhead-${clipId}`);
@@ -563,10 +740,13 @@ function buildTimeline(clipId, clipData, clipDuration) {
 
   // ── per-instrument tracks
   instruments.forEach((inst, idx) => {
-    const trackY = TOP_PAD + idx * (TRACK_H + TRACK_GAP);
+    const trackY   = TOP_PAD + idx * (TRACK_H + TRACK_GAP);
+    const instName = inst.replace(/\d+$/, ''); // strip performer_id suffix to get bare instrument name
+
+    const g = makeSVGEl('g', { 'data-instrument': instName, style: 'transition: opacity 0.2s' });
 
     // track bg
-    svg.appendChild(makeSVGEl('rect', {
+    g.appendChild(makeSVGEl('rect', {
       x: LABEL_W, y: trackY, width: DRAW_W, height: TRACK_H,
       fill: 'rgba(255,255,255,0.04)', rx: '2',
     }));
@@ -590,28 +770,30 @@ function buildTimeline(clipId, clipData, clipDuration) {
       const tt = makeSVGEl('title', {});
       tt.textContent = `${phase}  ${formatTime(start)} – ${formatTime(end)}`;
       bar.appendChild(tt);
-      svg.appendChild(bar);
+      g.appendChild(bar);
     });
 
     // tick marks at event points
-    events.forEach(([t, action]) => {
+    events.forEach(([t]) => {
       const x = xOf(t);
-      svg.appendChild(makeSVGEl('line', {
+      g.appendChild(makeSVGEl('line', {
         x1: x, x2: x, y1: trackY, y2: trackY + TRACK_H,
         stroke: 'rgba(0,0,0,0.4)', 'stroke-width': '1.5',
       }));
     });
 
     // instrument label overlaid at track start (drawn last so it sits on top)
-    svg.appendChild(makeSVGEl('rect', {
+    g.appendChild(makeSVGEl('rect', {
       x: 0, y: trackY, width: 88, height: TRACK_H,
       fill: 'rgba(18,17,15,0.6)',
     }));
-    svg.appendChild(makeSVGEl('text', {
+    g.appendChild(makeSVGEl('text', {
       x: 6, y: trackY + TRACK_H / 2 + 4,
       'text-anchor': 'start', 'font-size': '10',
       fill: 'var(--muted)', 'font-family': 'var(--font-mono)',
     })).textContent = inst;
+
+    svg.appendChild(g);
   });
 
   // ── x-axis
@@ -711,16 +893,20 @@ function renderClips(allData, performersData) {
 
   const legendTpl = document.getElementById('legend-tpl');
 
-  CLIP_META.filter(m => m.youtubeId).forEach(({ id, label, youtubeId }) => {
-    const clipDate = id.slice(0, 10); // MM-DD-YYYY prefix of the clip id
-    const pairing  = (perfLookup[clipDate] || []).slice().sort().join(' × ');
-    const clipData = allData.filter(r => r.id === id);
+  CLIP_META.filter(m => m.youtubeId).forEach(({ id, label, youtubeId, stems = {} }) => {
+    const clipDate   = id.slice(0, 10);
+    const pairing    = (perfLookup[clipDate] || []).slice().sort().join(' × ');
+    const clipData   = allData.filter(r => r.id === id);
 
     if (!clipData.length) return;
 
     const clipDuration  = parseFloat(clipData[0].clip_duration);
     clipDurations[id]   = clipDuration;
     clipDataStore[id]   = clipData;
+    activeSource[id]    = 'mixture';
+
+    // bare instrument names for this clip (sorted, no performer_id suffix)
+    const instNames = [...new Set(clipData.map(r => r.annotation_providing_instrument))].sort();
 
     const section = document.createElement('div');
     section.className = 'clip-section';
@@ -735,26 +921,75 @@ function renderClips(allData, performersData) {
       <span class="clip-duration-label">${formatTime(clipDuration)}</span>`;
     section.appendChild(header);
 
+    // ── source tabs
+    const tabsEl = document.createElement('div');
+    tabsEl.className = 'source-tabs';
+    const mixBtn = document.createElement('button');
+    mixBtn.className = 'source-tab active';
+    mixBtn.textContent = 'Mixture';
+    mixBtn.dataset.source = 'mixture';
+    mixBtn.title = 'Both instruments mixed together (original recording)';
+    tabsEl.appendChild(mixBtn);
+    instNames.forEach(inst => {
+      const btn = document.createElement('button');
+      btn.className = 'source-tab';
+      btn.textContent = inst;
+      btn.dataset.source = inst;
+      btn.title = stems[inst]
+        ? `Solo stem — only the ${inst} audio`
+        : `${inst} stem coming soon`;
+      if (!stems[inst]) btn.disabled = true;
+      tabsEl.appendChild(btn);
+    });
+    tabsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.source-tab');
+      if (!btn || btn.disabled) return;
+      setSource(id, btn.dataset.source);
+    });
+    section.appendChild(tabsEl);
+
     // ── body
     const body = document.createElement('div');
     body.className = 'clip-body';
 
-    // video pane
-    const videoPaneHTML = youtubeId
-      ? `<div class="video-wrap"><div id="yt-player-${id}"></div></div>`
-      : `<div class="video-wrap">
-           <div class="video-placeholder">
-             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-               <polygon points="5 3 19 12 5 21 5 3"/>
-             </svg>
-             <span>VIDEO COMING SOON</span>
-           </div>
-         </div>`;
+    // video pane — includes stem display overlay
+    const videoWrapHTML = `
+      <div class="video-wrap">
+        <div id="yt-player-${id}"></div>
+        <div class="stem-display" id="stem-display-${id}">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+          <div class="stem-display-label" id="stem-label-${id}">—</div>
+          <div class="stem-display-hint" id="stem-hint-${id}">click to play · or click the timeline to jump</div>
+        </div>
+      </div>`;
 
     const videoPaneEl = document.createElement('div');
     videoPaneEl.className = 'video-pane';
-    videoPaneEl.innerHTML = videoPaneHTML;
+    videoPaneEl.innerHTML = videoWrapHTML;
     body.appendChild(videoPaneEl);
+
+    // hidden audio elements for stems
+    stemAudios[id] = {};
+    instNames.forEach(inst => {
+      const audio = new Audio();
+      audio.preload = 'none';
+      if (stems[inst]) audio.src = stems[inst];
+      audio.addEventListener('play',  () => updateStemHint(id));
+      audio.addEventListener('pause', () => updateStemHint(id));
+      section.appendChild(audio);
+      stemAudios[id][inst] = audio;
+    });
+
+    // play/pause toggle on stem display
+    const stemDisplayEl = videoPaneEl.querySelector('.stem-display');
+    stemDisplayEl.addEventListener('click', () => {
+      const src   = activeSource[id];
+      const audio = stemAudios[id]?.[src];
+      if (!audio) return;
+      audio.paused ? audio.play() : audio.pause();
+    });
 
     // timeline pane
     const tlPane = document.createElement('div');
@@ -764,13 +999,17 @@ function renderClips(allData, performersData) {
         <span class="timeline-instruction"><span class="timeline-instruction-arrow">↓</span> hover to preview · click to play</span>
         <span class="seek-readout" id="seek-readout-${id}"></span>
       </div>
+      <div class="timeline-meta">
+        <div class="track-perspective">each row reflects that performer's own perspective</div>
+      </div>
       <div class="timeline-svg-wrap" id="tl-wrap-${id}"></div>`;
+
+    // legend goes into the meta row, before the perspective note
+    const metaRow = tlPane.querySelector('.timeline-meta');
+    metaRow.prepend(legendTpl.content.cloneNode(true));
+
     body.appendChild(tlPane);
-
     section.appendChild(body);
-
-    // legend
-    section.appendChild(legendTpl.content.cloneNode(true));
 
     container.appendChild(section);
 
