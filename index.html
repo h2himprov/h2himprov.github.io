@@ -76,6 +76,21 @@
       margin-top: 0.4rem;
     }
 
+    .dataset-authors {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 0.7rem;
+    }
+
+    .dataset-venue {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-top: 0.3rem;
+    }
+
     .header-links {
       display: flex;
       gap: 0.75rem;
@@ -433,6 +448,27 @@
       color: #e06060;
     }
 
+    /* ── CITE ──────────────────────────────────────────────────── */
+    .cite-section {
+      padding: 2rem 4rem;
+      max-width: 900px;
+      border-top: 1px solid var(--border);
+    }
+
+    .cite-block {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1rem 1.25rem;
+      margin-top: 0.6rem;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.6;
+    }
+
     /* ── FOOTER ────────────────────────────────────────────────── */
     footer {
       padding: 2rem 4rem;
@@ -452,11 +488,14 @@
     <div class="dataset-eyebrow">Audio-Visual Dataset</div>
     <div class="dataset-title">H2H Music Improv Dataset</div>
     <div class="dataset-subtitle">Human-to-Human Free Improvisation with Bidirectional Intention Annotations</div>
+    <div class="dataset-authors">Aleksandra Teng Ma, Anthony Cammarota, Jiayi Wang, Alexandria Smith, Cheng-Zhi Anna Huang, Jeffrey Albert, Alexander Lerch</div>
+    <div class="dataset-venue">Published in the Proceedings of the International Society for Music Information Retrieval Conference (ISMIR), 2026</div>
   </div>
   <div class="header-links">
-    <a class="btn-link primary" href="javascript:void(0)" id="link-zenodo" style="display:none">Zenodo ↗</a>
+    <a class="btn-link primary" href="https://zenodo.org/records/21726560" target="_blank" rel="noopener" id="link-zenodo" title="Hosted on Zenodo · DOI 10.5281/zenodo.21726560">Download Dataset ↗</a>
     <a class="btn-link" href="datasheet.html" style="display:none">Datasheet ↗</a>
-    <a class="btn-link" href="javascript:void(0)" id="link-paper" style="display:none">Paper ↗</a>
+    <!-- TODO: paper still pending on arXiv — set href and remove style="display:none" once it's live -->
+    <a class="btn-link" href="javascript:void(0)" id="link-paper" style="display:none">Read the Paper ↗</a>
   </div>
 </header>
 
@@ -490,6 +529,18 @@
   </div>
 </template>
 
+<!-- ── CITE ────────────────────────────────────────────────────────────────── -->
+<!-- TODO: fill in exact title / pages / arXiv ID once the ISMIR camera-ready + arXiv listing are final -->
+<section class="cite-section">
+  <div class="desc-label">Cite</div>
+  <pre class="cite-block">@inproceedings{ma2026h2h,
+  title     = {H2H Music Improv: Human-to-Human Free Improvisation with Bidirectional Intention Annotations},
+  author    = {Ma, Aleksandra Teng and Cammarota, Anthony and Wang, Jiayi and Smith, Alexandria and Huang, Cheng-Zhi Anna and Albert, Jeffrey and Lerch, Alexander},
+  booktitle = {Proceedings of the International Society for Music Information Retrieval Conference (ISMIR)},
+  year      = {2026}
+}</pre>
+</section>
+
 <footer>
   H2H Music Improv Dataset &nbsp;·&nbsp; Switch between mixture and stem audio &nbsp;·&nbsp; Phase colors: negotiation / proposal / stability
 </footer>
@@ -506,10 +557,12 @@ const PERFORMERS_PATH = 'data/performers.csv';
 //  Pairings are derived automatically from performers.csv.
 const R2 = 'https://pub-8fce360eec0244b892e1b99cbb0d6ffd.r2.dev';
 const CLIP_META = [
-  { id: '11-19-2025-Clip3', label: 'Clip 3', youtubeId: 'Tg3z55bgLSk', stems: { guitar: `${R2}/11-19-2025-Clip3-guitar.wav`,   trombone: `${R2}/11-19-2025-Clip3-trombone.wav`  } },
-  { id: '02-06-2026-Clip1', label: 'Clip 1', youtubeId: 'CUjmuYQIVi8', stems: { guitar: `${R2}/02-06-2026-Clip1-guitar.wav`,   saxophone: `${R2}/02-06-2026-Clip1-saxophone.wav` } },
-  { id: '02-25-2026-Clip3', label: 'Clip 3', youtubeId: 'msjzGNtKxtE', stems: { saxophone: `${R2}/02-25-2026-Clip3-saxophone.wav`, trombone: `${R2}/02-25-2026-Clip3-trombone.wav` } },
-  { id: '03-24-2026-Clip5', label: 'Clip 5', youtubeId: 'teeeMxyw8Gk', stems: { guitar: `${R2}/03-24-2026-Clip5-guitar.wav`,   trombone: `${R2}/03-24-2026-Clip5-trombone.wav`  } },
+  { id: '04-11-2026-Clip2', label: 'Clip 2', youtubeId: 'u6QFCHZRsW0', stems: { guitar: `${R2}/04-11-2026-Clip2-guitar.wav`,   trumpet: `${R2}/04-11-2026-Clip2-trumpet.wav`  } },
+  { id: '11-19-2025-Clip3', label: 'Clip 3', youtubeId: 'I6p0x0aIt-g', stems: { guitar: `${R2}/11-19-2025-Clip3-guitar.wav`,   trombone: `${R2}/11-19-2025-Clip3-trombone.wav`  } },
+  { id: '03-25-2026-Clip3', label: 'Clip 3', youtubeId: '_4CJkfP98Uo', stems: { trombone: `${R2}/03-25-2026-Clip3-trombone.wav`,   trumpet: `${R2}/03-25-2026-Clip3-trumpet.wav`  } },
+  { id: '03-24-2026-Clip5', label: 'Clip 5', youtubeId: 'NVBW6mkV1Ak', stems: { guitar: `${R2}/03-24-2026-Clip5-guitar.wav`,   trombone: `${R2}/03-24-2026-Clip5-trombone.wav`  } },
+  { id: '02-25-2026-Clip3', label: 'Clip 3', youtubeId: '9PZOfSPyUyw', stems: { saxophone: `${R2}/02-25-2026-Clip3-saxophone.wav`, trombone: `${R2}/02-25-2026-Clip3-trombone.wav` } },
+  { id: '02-06-2026-Clip1', label: 'Clip 1', youtubeId: 'QM8fqCl5aAE', stems: { guitar: `${R2}/02-06-2026-Clip1-guitar.wav`,   saxophone: `${R2}/02-06-2026-Clip1-saxophone.wav` } }
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
