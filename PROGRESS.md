@@ -52,8 +52,15 @@ All changes above are local only. Need to `git add` + `git commit` + `git push` 
 - **Commit & push**: push all local changes to GitHub Pages
 - **Per-stem audio**: embed native `<audio>` elements (one per performer stem) below the annotation bar
 - **Seek-target selector**: pill/toggle above the annotation to choose which component (video or a stem) click-to-seek controls
-- **Remaining YouTube IDs**: upload and add IDs for Clips 1, 2, 4, 5, 6
+- **Remaining YouTube IDs**: keep uploading and adding IDs for the rest of the 37 clips in `data/master.csv` (5 are live now)
 - **Datasheet**: `datasheet.html` is currently empty
+- **Paper link**: `link-paper` in the header is still hidden — arXiv submission pending. Once live, set its `href` and remove `style="display:none"` ([index.html](index.html))
+- **Cite section BibTeX**: placeholder entry added at the bottom of the page — fill in exact paper title, pages, and arXiv ID once finalized
+
+## Author / citation info (added)
+- Header now shows author byline (no affiliations, per decision) and an ISMIR 2026 publication statement
+- Zenodo button wired to https://zenodo.org/records/21726560 (DOI 10.5281/zenodo.21726560)
+- Cite section added near the footer with an `@inproceedings` BibTeX placeholder
 
 ## How to preview locally
 ```
